@@ -1,0 +1,17 @@
+﻿import { products } from '../../data/product'
+import ProductCard from '../../components/ProductCard'
+
+const CategoryPage = () => {
+  const filtered = products.filter(p => p.category === "Digestion Support")
+  return (
+    <div className="p-4">
+      <h1 className="text-2xl font-bold mb-4">Digestion Support</h1>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {filtered.map(product => (
+          <ProductCard key={product.id} p={product} />
+        ))}
+      </div>
+    </div>
+  )
+}
+export default CategoryPage
