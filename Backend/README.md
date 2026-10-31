@@ -61,9 +61,12 @@ hPanel and put the new password in `config.local.php`.
 4. Publish this folder on a PHP 8.1+ host with PDO MySQL enabled. For example,
    if it is published at `https://api.example.com/Backend`, its API base URL is
    `https://api.example.com/Backend/api`.
-5. Add `VITE_API_BASE_URL=https://api.example.com/Backend/api` to the frontend
-   build environment and rebuild/redeploy the React app. For local development,
-   set it to `http://localhost/Backend/api` (or the local PHP server URL).
+5. The frontend defaults to the production API at
+   `https://thehillston.com/Ayuveera/Backend/api`. Set
+   `VITE_API_BASE_URL=https://api.example.com/Backend/api` in the frontend
+   build environment only when using a different backend, then rebuild and
+   redeploy. For local development, set it to
+   `http://localhost/Backend/api` (or the local PHP server URL).
 
 ### Hostinger deployment checklist
 
@@ -141,10 +144,12 @@ hPanel and put the new password in `config.local.php`.
    It should return JSON with a `data` array (an empty array means no active
    product rows). If it returns an error, inspect the site's PHP error log in
    hPanel; never enable public PHP error display on a live site.
-11. Configure `VITE_API_BASE_URL=https://thehillston.com/Ayuveera/Backend/api`
-   in the frontend build/deployment settings, then rebuild and redeploy the
-   React site. This is a build-time setting; editing it without a new build
-   will not update the deployed JavaScript.
+11. The frontend's production API default is
+   `https://thehillston.com/Ayuveera/Backend/api`. If Vercel has an explicit
+   `VITE_API_BASE_URL` override, ensure it uses that backend API URL (not the
+   Vercel frontend URL) and redeploy. Vite environment variables are build-time
+   settings; changing them without a new deployment will not update the
+   deployed JavaScript.
 
 The production frontend origin must be included exactly in
 `API_ALLOWED_ORIGINS`. The default origins are for local Vite development only.

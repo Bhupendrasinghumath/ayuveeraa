@@ -1,4 +1,8 @@
-export const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/+$/, '');
+const DEFAULT_API_BASE_URL = 'https://thehillston.com/Ayuveera/Backend/api';
+
+export const API_BASE_URL = (
+  import.meta.env.VITE_API_BASE_URL || DEFAULT_API_BASE_URL
+).replace(/\/+$/, '');
 
 export async function apiRequest(path, options = {}) {
   if (!API_BASE_URL) {
