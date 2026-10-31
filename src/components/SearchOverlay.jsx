@@ -1,9 +1,22 @@
-import { FiSearch, FiPlus } from "react-icons/fi";
+import { useEffect, useState } from "react";
+import { FiSearch, FiPlus, FiMinus } from "react-icons/fi";
 import { IoClose } from "react-icons/io5";
 import { Link, useNavigate } from "react-router-dom";
+import { getCart, toggleCartItem } from "../lib/cart";
 
 export default function SearchOverlay({ isOpen, onClose }) {
   const navigate = useNavigate();
+  const [cartIds, setCartIds] = useState(() => new Set(getCart().map((item) => String(item.id))));
+
+  useEffect(() => {
+    const syncCart = () => setCartIds(new Set(getCart().map((item) => String(item.id))));
+    window.addEventListener("cart:updated", syncCart);
+    window.addEventListener("storage", syncCart);
+    return () => {
+      window.removeEventListener("cart:updated", syncCart);
+      window.removeEventListener("storage", syncCart);
+    };
+  }, []);
 
   const trendingSearches = ["Weight Gainer", "Muscle Gainer", "Cholesterol", "Diabetes", "Fat Loss", "Liver"];
   
@@ -21,12 +34,7 @@ export default function SearchOverlay({ isOpen, onClose }) {
 
   const handleAddToCart = (e, product) => {
     e.stopPropagation();
-    let cart = JSON.parse(localStorage.getItem("cart")) || [];
-    const exist = cart.find((p) => p.id === product.id);
-    if (exist) cart = cart.map((p) => p.id === product.id ? { ...p, quantity: p.quantity + 1 } : p);
-    else cart.push({ ...product, quantity: 1 });
-    localStorage.setItem("cart", JSON.stringify(cart));
-    window.dispatchEvent(new Event("storage"));
+    toggleCartItem(product);
   };
 
   const handleSearch = (term) => {
@@ -60,8 +68,14 @@ export default function SearchOverlay({ isOpen, onClose }) {
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             {mostLiked.map((p) => (
               <div key={p.id} className="relative border rounded-xl p-3 bg-white hover:shadow-lg transition">
-                <button onClick={(e) => handleAddToCart(e, p)} className="absolute top-2 right-2 w-7 h-7 bg-white border shadow rounded-full grid place-items-center hover:bg-black hover:text-white z-10">
-                  <FiPlus className="text-[14px]" />
+                <button
+                  type="button"
+                  aria-label={cartIds.has(String(p.id)) ? `Remove ${p.name} from cart` : `Add ${p.name} to cart`}
+                  aria-pressed={cartIds.has(String(p.id))}
+                  onClick={(e) => handleAddToCart(e, p)}
+                  className={`absolute top-2 right-2 z-10 grid h-7 w-7 place-items-center rounded-full border shadow transition ${cartIds.has(String(p.id)) ? "bg-[#0f3d2e] text-white" : "bg-white hover:bg-black hover:text-white"}`}
+                >
+                  {cartIds.has(String(p.id)) ? <FiMinus className="text-[14px]" /> : <FiPlus className="text-[14px]" />}
                 </button>
                 <div onClick={() => handleSearch(p.name)} className="cursor-pointer">
                   <div className="bg-[#f8f8f4] rounded-lg h-[110px] grid place-items-center mb-2"><img src={p.image} alt="" className="h-[90px]" /></div>

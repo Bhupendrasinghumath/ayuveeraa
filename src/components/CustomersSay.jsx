@@ -110,7 +110,7 @@ export default function CustomersSay() {
                   {/* Shark Tank Badge - Professional */}
                   <div className="absolute top-3 left-3 bg-[#111] text-white text-[8px] font-bold tracking-wider px-2.5 py-1 rounded-full flex items-center gap-1">
                     <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></span>
-                    AS SEEN ON SHARK TANK INDIA
+                    5000+ years of <span className="text-[#8fcf8f]">Ayurvedic Wellness</span>
                   </div>
                   {/* Verified */}
                   <div className="absolute bottom-3 right-3 bg-white/90 backdrop-blur-md text-[10px] font-bold px-2.5 py-1 rounded-full shadow-sm">

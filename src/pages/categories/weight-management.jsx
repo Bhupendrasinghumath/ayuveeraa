@@ -1,7 +1,8 @@
-﻿import { products } from '../../data/product'
 import ProductCard from '../../components/ProductCard'
+import { useProducts } from '../../context/useProducts'
 
 const CategoryPage = () => {
+  const { products } = useProducts()
   const filtered = products.filter(p => p.category === "Weight Management")
   return (
     <div className="p-4">

@@ -1,4 +1,4 @@
-import { Routes, Route, Link } from 'react-router-dom';
+import { Routes, Route, Link, useLocation } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import Home from "./pages/Home";
@@ -27,11 +27,35 @@ import HerbalShots from './pages/categories/herbal-shots';
 import PlantProtein from './pages/categories/plant-protein-supplement';
 import SugarManagement from './pages/categories/sugar-management';
 
+import FAQs from './pages/customerServices/FAQs';
+import TrackOrder from './pages/customerServices/TrackOrder';
+import ReferFriend from './pages/customerServices/ReferFriend';
+import PrivacyPolicy from './pages/TermsAndCondition/PrivacyPolicy';
+import ShippingPolicy from './pages/TermsAndCondition/ShippingPolicy';
+import TermsAndCondition from './pages/TermsAndCondition/TermsAndCondition';
+import { useProducts } from './context/useProducts';
+import Admin from './pages/Admin';
+
 function App() {
+  const { catalogError, loading: catalogLoading } = useProducts();
+  const location = useLocation();
+  const isAdmin = location.pathname === '/adminayuveera2026';
+
   return (
     <div className="app">
-      <Navbar />
+      {!isAdmin && <Navbar />}
+      {!isAdmin && catalogError && (
+        <p role="status" className="bg-amber-50 px-4 py-2 text-center text-sm text-amber-900">
+          Product catalog unavailable: {catalogError}
+        </p>
+      )}
+      {!isAdmin && !catalogError && catalogLoading && (
+        <p role="status" className="bg-[#f4f6f1] px-4 py-2 text-center text-sm text-gray-600">
+          Loading products...
+        </p>
+      )}
       <Routes>
+        <Route path="/adminayuveera2026" element={<Admin />} />
         <Route path="/" element={<Home />} />
         
         {/* ALL PRODUCTS */}
@@ -64,9 +88,16 @@ function App() {
         <Route path="/order-success" element={<OrderSuccess />} />
         <Route path="/login" element={<Login />} />
 
+        <Route path="/faqs" element={<FAQs />} />
+        <Route path="/track-order" element={<TrackOrder />} />
+        <Route path="/refer-friend" element={<ReferFriend />} />
+        <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+        <Route path="/shipping-policy" element={<ShippingPolicy />} />
+        <Route path="/terms-and-conditions" element={<TermsAndCondition />} />
+
         <Route path="*" element={<main className="page-content p-10"><h2>404 - Page Not Found</h2><Link to="/" className="underline">Return Home</Link></main>} />
       </Routes>
-      <Footer/>
+      {!isAdmin && <Footer/>}
     </div>
   );
 }

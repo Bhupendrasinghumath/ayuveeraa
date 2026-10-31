@@ -4,6 +4,15 @@
     width: 100%;
     min-height: 100vh;
   }
+
+.home-hero {
+  height: max(0px, calc(100vh - var(--site-header-height, 0px) - 28px));
+  height: max(0px, calc(100svh - var(--site-header-height, 0px) - 28px));
+  height: max(0px, calc(100dvh - var(--site-header-height, 0px) - 28px));
+  min-height: 0;
+  flex: 0 0 auto;
+  contain: size;
+}
   
   /* Scrollbar */
   ::-webkit-scrollbar {

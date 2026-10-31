@@ -1,20 +1,35 @@
 import { useState } from 'react';
+import { apiRequest } from '../lib/api';
 
 function Contact() {
   const [formData, setFormData] = useState({ name: '', email: '', subject: '', message: '' });
   const [successMessage, setSuccessMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
   function handleChange(e) {
     const { name, value } = e.target;
     setFormData(prev => ({...prev, [name]: value }));
     setSuccessMessage('');
+    setErrorMessage('');
   }
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
-    console.log('Contact form data:', formData);
-    setSuccessMessage('Thank you! Your message has been submitted successfully.');
-    setFormData({ name: '', email: '', subject: '', message: '' });
+    setSubmitting(true);
+    setErrorMessage('');
+    try {
+      await apiRequest('contact.php', {
+        method: 'POST',
+        body: JSON.stringify(formData),
+      });
+      setSuccessMessage('Thank you! Your message has been submitted successfully.');
+      setFormData({ name: '', email: '', subject: '', message: '' });
+    } catch (error) {
+      setErrorMessage(error.message);
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -74,10 +89,15 @@ function Contact() {
               className="w-full p-3 border border-[#dce3d5] rounded-md bg-[#fffdf8] text-sm resize-y focus:outline-none focus:ring-2 focus:ring-[#78934d]" />
           </div>
 
-          <button type="submit" className="w-full py-3.5 rounded-md bg-[#254c35] text-white text-sm font-bold hover:bg-[#426b48] transition">Send Message →</button>
+          <button type="submit" disabled={submitting} className="w-full py-3.5 rounded-md bg-[#254c35] text-white text-sm font-bold hover:bg-[#426b48] transition disabled:opacity-60">
+            {submitting ? 'Sending...' : 'Send Message →'}
+          </button>
 
           {successMessage && (
             <p className="mt-4 p-3 rounded-md bg-[#e7edda] text-[#254c35] text-sm leading-6">{successMessage}</p>
+          )}
+          {errorMessage && (
+            <p role="alert" className="mt-4 p-3 rounded-md bg-red-50 text-red-800 text-sm leading-6">{errorMessage}</p>
           )}
         </form>
 

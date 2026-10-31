@@ -1,36 +1,55 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { notifyCartUpdated } from "../lib/cart";
+
+function getPrice(item) {
+  const raw = item.price ?? 0;
+  const amount = typeof raw === "number"
+    ? raw
+    : Number(String(raw).replace(/,/g, "").replace(/[^\d.-]/g, ""));
+  return Number.isFinite(amount) && amount >= 0 ? amount : 0;
+}
 
 export default function Cart() {
-  const [cart, setCart] = useState([]);
+  const [cart, setCart] = useState(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem("cart") || "[]");
+      return Array.isArray(saved)
+        ? saved.map((item) => ({ ...item, quantity: Math.min(99, Math.max(1, Number(item.quantity ?? item.qty) || 1)) }))
+        : [];
+    } catch {
+      return [];
+    }
+  });
   const navigate = useNavigate();
 
   useEffect(() => {
     window.scrollTo(0, 0);
-    const saved = JSON.parse(localStorage.getItem("cart") || "[]");
-    setCart(saved);
   }, []);
 
   const updateQty = (id, type) => {
-    let newCart = cart.map(item => {
+    const newCart = cart.map((item) => {
       if (item.id === id) {
-        let newQty = type === "inc" ? (item.qty || 1) + 1 : (item.qty || 1) - 1;
-        if (newQty < 1) newQty = 1;
-        return { ...item, qty: newQty };
+        const quantity = type === "inc"
+          ? Math.min(99, item.quantity + 1)
+          : Math.max(1, item.quantity - 1);
+        return { ...item, quantity };
       }
       return item;
     });
     setCart(newCart);
     localStorage.setItem("cart", JSON.stringify(newCart));
+    notifyCartUpdated();
   };
 
   const removeItem = (id) => {
     const newCart = cart.filter(item => item.id !== id);
     setCart(newCart);
     localStorage.setItem("cart", JSON.stringify(newCart));
+    notifyCartUpdated();
   };
 
-  const total = cart.reduce((acc, item) => acc + item.price * (item.qty || 1), 0);
+  const total = cart.reduce((acc, item) => acc + getPrice(item) * item.quantity, 0);
 
   if (cart.length === 0) {
     return (
@@ -52,11 +71,11 @@ export default function Cart() {
             <img src={item.image} className="w-20 h-20 rounded-xl object-cover bg-[#fdf8f3]" alt="" />
             <div className="flex-1">
               <p className="font-bold text-[14px]">{item.name}</p>
-              <p className="font-black mt-1 text-[14px]">₹{item.price}</p>
+              <p className="font-black mt-1 text-[14px]">₹{getPrice(item).toLocaleString("en-IN")}</p>
               <div className="flex items-center gap-2 mt-2">
-                <button onClick={() => updateQty(item.id, "dec")} className="w-7 h-7 border rounded-full grid place-items-center">-</button>
-                <span className="text-[13px] font-bold">{item.qty || 1}</span>
-                <button onClick={() => updateQty(item.id, "inc")} className="w-7 h-7 border rounded-full grid place-items-center">+</button>
+                <button aria-label={`Decrease ${item.name} quantity`} disabled={item.quantity <= 1} onClick={() => updateQty(item.id, "dec")} className="w-7 h-7 border rounded-full grid place-items-center disabled:opacity-40">-</button>
+                <span className="text-[13px] font-bold">{item.quantity}</span>
+                <button aria-label={`Increase ${item.name} quantity`} disabled={item.quantity >= 99} onClick={() => updateQty(item.id, "inc")} className="w-7 h-7 border rounded-full grid place-items-center disabled:opacity-40">+</button>
               </div>
             </div>
             <button onClick={() => removeItem(item.id)} className="text-[12px] font-bold text-red-500">Remove</button>

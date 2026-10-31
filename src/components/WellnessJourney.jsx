@@ -37,7 +37,7 @@ export default function WellnessJourney() {
   };
 
   return (
-    <div className="w-full bg-[#1e3d2c] mt-2">
+    <div className="w-full bg-[#1e3d2c] mt-0">
         
       {/* === MARQUEE WAPAS LAGA DIYA - NO BREAK, CONTINUOUS === */}
       <div className="bg-[#1e3d2c] border-y border-white/10 py-[7px] overflow-hidden">
@@ -60,7 +60,7 @@ export default function WellnessJourney() {
       </div>
 
       {/* === PILLS - CLICK PE DIRECT CATEGORY DETAILS === */}
-      <div className="flex justify-center items-center gap-3 px-3 py-4 overflow-x-auto scrollbar-hide">
+      {/* <div className="flex justify-center items-center gap-3 px-3 py-4 overflow-x-auto scrollbar-hide">
         {pills.map((pill) => (
           <button
             key={pill.slug}
@@ -82,7 +82,7 @@ export default function WellnessJourney() {
             </div>
           </button>
         ))}
-      </div>
+      </div> */}
 
       <style>{`
         .scrollbar-hide::-webkit-scrollbar { display: none; }

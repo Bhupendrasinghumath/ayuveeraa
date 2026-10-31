@@ -115,18 +115,18 @@ function Footer() {
             <h3 className="font-bold text-[#1e3a2a] text-[16px] mb-4">Customer Services</h3>
             <div className="flex flex-col gap-2 text-[13px] text-[#1e3a2a]">
               <button onClick={() => handleLinkClick('/contact')} className="text-left hover:underline">Contact Us</button>
-              <Link onClick={() => window.scrollTo(0,0)} to="#">FAQs</Link>
-              <Link onClick={() => window.scrollTo(0,0)} to="#">Track Order</Link>
-              <Link onClick={() => window.scrollTo(0,0)} to="#">Refer a Friend</Link>
+              <Link onClick={() => window.scrollTo(0,0)} to="/faqs">FAQs</Link>
+              <Link onClick={() => window.scrollTo(0,0)} to="/track-order">Track Order</Link>
+              <Link onClick={() => window.scrollTo(0,0)} to="/refer-friend">Refer a Friend</Link>
             </div>
           </div>
 
           <div>
             <h3 className="font-bold text-[#1e3a2a] text-[16px] mb-4">Terms & Condition</h3>
             <div className="flex flex-col gap-2 text-[13px] text-[#1e3a2a]">
-              <Link onClick={() => window.scrollTo(0,0)} to="#">Terms & Condition</Link>
-              <Link onClick={() => window.scrollTo(0,0)} to="#">Shipping Policy</Link>
-              <Link onClick={() => window.scrollTo(0,0)} to="#">Privacy Policy</Link>
+            <Link onClick={() => window.scrollTo(0,0)} to="/terms-and-conditions">Terms & Condition</Link>
+            <Link onClick={() => window.scrollTo(0,0)} to="/shipping-policy">Shipping Policy</Link>
+            <Link onClick={() => window.scrollTo(0,0)} to="/privacy-policy">Privacy Policy</Link>
             </div>
           </div>
 
