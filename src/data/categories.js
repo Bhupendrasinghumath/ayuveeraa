@@ -1,0 +1,15 @@
+export const categories = [
+  { name: "All Products", path: "/products" },
+  { name: "Weight Management", path: "/products/weight-management" },
+  { name: "Hair Care", path: "/products/hair-care" },
+  { name: "Skin Care", path: "/products/skin-care" },
+  { name: "Stress Management", path: "/products/stress-management" },
+  { name: "Blood Purifier", path: "/products/blood-purifier" },
+  { name: "Digestion Support", path: "/products/digestion-support" },
+  { name: "Eye Care", path: "/products/eye-care" },
+  { name: "Heart Care", path: "/products/heart-care" },
+  { name: "Migraine Support", path: "/products/migraine-support" },
+  { name: "Herbal Shots", path: "/products/herbal-shots" },
+  { name: "Plant Protein Supplement", path: "/products/plant-protein-supplement" },
+  { name: "Sugar Management", path: "/products/sugar-management" },
+];
