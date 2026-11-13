@@ -1,3 +1,4 @@
+import { useLayoutEffect } from 'react';
 import { Routes, Route, Link, useLocation } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
@@ -41,6 +42,10 @@ function App() {
   const { catalogError, loading: catalogLoading } = useProducts();
   const location = useLocation();
   const isAdmin = location.pathname === '/adminayuveera2026';
+
+  useLayoutEffect(() => {
+    window.scrollTo(0, 0);
+  }, [location.pathname]);
 
   return (
     <div className="app">
