@@ -1,5 +1,5 @@
-import { useLayoutEffect } from 'react';
 import { Routes, Route, Link, Navigate, useLocation } from 'react-router-dom';
+import { useLayoutEffect } from 'react';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import Home from "./pages/Home";
