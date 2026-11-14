@@ -2,6 +2,9 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { apiRequest } from "../lib/api.js";
 import { ensureCartItem, isProductInCart, toggleCartItem } from "../lib/cart.js";
+import { readCachedProductDetail, writeCachedProductDetail } from "../lib/productCache.js";
+import { useProducts } from "../context/useProducts.js";
+import ProductReviews from "../components/ProductReviews.jsx";
 
 const optionalValue = (value) => (
   value !== null && value !== undefined && String(value).trim() !== ""
@@ -23,6 +26,7 @@ function ProductState({ children, title, action }) {
 export default function ProductDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { products: catalogProducts } = useProducts();
   const [response, setResponse] = useState(null);
   const [requestVersion, setRequestVersion] = useState(0);
   const [controls, setControls] = useState({ id: null, activeImg: 0, qty: 1 });
@@ -38,6 +42,7 @@ export default function ProductDetails() {
         if (!result || typeof result !== "object" || Array.isArray(result)) {
           throw new Error("The product response was not valid.");
         }
+        writeCachedProductDetail(id, result);
         setResponse({ id, requestVersion, product: result });
       })
       .catch((requestError) => {
@@ -67,19 +72,16 @@ export default function ProductDetails() {
   const currentResponse = response?.id === id && response.requestVersion === requestVersion
     ? response
     : null;
-  const loading = !currentResponse;
-  const product = currentResponse?.product;
+  const cachedProduct = readCachedProductDetail(id)
+    || catalogProducts.find((item) => String(item.id) === String(id));
+  const product = currentResponse?.product || cachedProduct;
   const error = currentResponse?.error || "";
   const notFound = currentResponse?.notFound || false;
   const activeImg = controls.id === id ? controls.activeImg : 0;
   const qty = controls.id === id ? controls.qty : 1;
 
-  if (loading) {
-    return (
-      <ProductState title="Loading product">
-        <span role="status">Fetching product details…</span>
-      </ProductState>
-    );
+  if (!currentResponse && !product) {
+    return <main className="min-h-[55vh] bg-white" aria-busy="true" />;
   }
 
   if (notFound) {
@@ -93,7 +95,7 @@ export default function ProductDetails() {
     );
   }
 
-  if (error || !product) {
+  if (error && !product) {
     return (
       <ProductState
         title="We couldn't load this product"
@@ -110,6 +112,10 @@ export default function ProductDetails() {
         {error || "Please try again in a moment."}
       </ProductState>
     );
+  }
+
+  if (!product) {
+    return <main className="min-h-[55vh] bg-white" aria-busy="true" />;
   }
 
   const images = Array.isArray(product.images) && product.images.length
@@ -169,6 +175,11 @@ export default function ProductDetails() {
   return (
     <main className="min-h-screen w-full bg-white">
       <div className="mx-auto max-w-7xl px-4 pb-14 pt-5 sm:px-6 sm:pb-20 md:pt-8 lg:px-10">
+        {error && (
+          <p role="status" className="mb-4 rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-900">
+            Showing saved product information. Latest details could not be refreshed. {error}
+          </p>
+        )}
         <nav aria-label="Breadcrumb" className="flex min-w-0 flex-wrap items-center gap-y-1 text-xs tracking-wide text-[#68736a]">
           <Link to="/" className="transition-colors hover:text-[#102e22] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#b79558]">Home</Link>
           <span aria-hidden="true" className="px-2 text-[#b79558]">/</span>
@@ -229,17 +240,6 @@ export default function ProductDetails() {
               <span className="mt-3 inline-block max-w-full rounded bg-gray-100 px-3 py-1 text-xs text-gray-700">
                 {product.tag}
               </span>
-            )}
-
-            {(Number(product.rating) > 0 || optionalValue(product.reviews)) && (
-              <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-2 text-sm">
-                {Number(product.rating) > 0 && (
-                  <span className="inline-flex items-center gap-1 text-sm font-semibold text-gray-800"><span aria-hidden="true" className="text-yellow-500">★</span>{product.rating}</span>
-                )}
-                {optionalValue(product.reviews) && (
-                  <span className="text-xs text-gray-600">{product.reviews} reviews</span>
-                )}
-              </div>
             )}
 
             <div className="mt-5 flex flex-wrap items-baseline gap-x-4 gap-y-2">
@@ -393,6 +393,7 @@ export default function ProductDetails() {
                 ))}
           </section>
         )}
+        <ProductReviews key={id} productId={id} />
       </div>
     </main>
   );

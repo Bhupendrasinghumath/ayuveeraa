@@ -2,19 +2,23 @@ import { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { FiShoppingBag, FiUser, FiMenu } from "react-icons/fi";
 import SearchOverlay from "./SearchOverlay";
-import { categories as productCategories } from "../data/categories";
+import { getAvailableProductCategories } from "../data/categories";
 import { CART_UPDATED_EVENT, getCartCount } from "../lib/cart";
 import BrandWordmark from "./BrandWordmark";
+import { hasCustomerSession } from "../lib/customerSession.js";
+import { useProducts } from "../context/useProducts.js";
+import { apiRequest } from "../lib/api.js";
 
 export default function Navbar() {
   const [open, setOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [cartCount, setCartCount] = useState(0);
+  const [promotions, setPromotions] = useState(null);
+  const [promotionError, setPromotionError] = useState('');
   const navigate = useNavigate();
   const location = useLocation();
-  const categories = productCategories.filter(
-    (category) => !["Blood Purifier", "Eye Care", "Heart Care"].includes(category.name)
-  );
+  const { products } = useProducts();
+  const categories = getAvailableProductCategories(products);
 
   const oldLinks = [
     { name: "Home", to: "/" },
@@ -31,13 +35,7 @@ export default function Navbar() {
       return;
     }
 
-    if (category.name === "All Products") {
-      navigate(category.path);
-      return;
-    }
-
-    const slug = category.path.split("/").pop();
-    navigate(`/products?category=${encodeURIComponent(slug)}`);
+    navigate(category.path);
   };
 
   const isCategoryActive = (category) => {
@@ -45,14 +43,12 @@ export default function Navbar() {
       return location.pathname === category.path;
     }
 
-    if (category.name !== "All Products" && location.pathname === category.path) {
-      return true;
+    if (location.pathname !== "/products") {
+      return location.pathname === `/products/${category.slug}`;
     }
-
-    if (location.pathname !== "/products") return false;
     const selectedSlug = new URLSearchParams(location.search).get("category");
     if (category.name === "All Products") return !selectedSlug;
-    return selectedSlug === category.path.split("/").pop();
+    return selectedSlug === category.slug;
   };
 
   useEffect(() => {
@@ -67,12 +63,37 @@ export default function Navbar() {
     };
   }, [location]);
 
+  useEffect(() => {
+    const controller = new AbortController();
+    apiRequest('promotions.php', { signal: controller.signal })
+      .then(setPromotions)
+      .catch((requestError) => {
+        if (requestError.name !== 'AbortError') {
+          setPromotionError(requestError.message);
+        }
+      });
+    return () => controller.abort();
+  }, []);
+
+  const promotionText = promotionError
+    ? 'Offers are temporarily unavailable.'
+    : promotions
+      ? [
+        promotions.onlineDiscountPercent > 0
+          ? `Get ${promotions.onlineDiscountPercent}% off on online payment`
+          : '',
+        promotions.featuredCoupon
+          ? `Use ${promotions.featuredCoupon.code} for an extra ${promotions.featuredCoupon.discountPercent}% off`
+          : '',
+      ].filter(Boolean).join(' · ') || 'No active offers right now.'
+      : 'Loading current offers...';
+
   return (
     <>
       <div data-site-header className="sticky top-0 z-50 bg-white shadow-sm">
         {!searchOpen && (
           <div style={{ backgroundColor: "#FFE766" }} className="text-center py-[4px] text-[12px] md:text-[12px] font-medium text-black tracking-wide">
-            Get <span className="font-extrabold text-black">extra discount</span> on online payment*
+            {promotionText}
           </div>
         )}
         <nav className="h-[56px] flex items-center border-b">
@@ -87,7 +108,13 @@ export default function Navbar() {
             </Link>
             <div className="flex items-center gap-4">
               <Link to="/cart" className="relative text-[24px]"><FiShoppingBag />{cartCount > 0 && <span className="absolute -top-2 -right-2 bg-black text-white text-[10px] w-4 h-4 rounded-full grid place-items-center">{cartCount}</span>}</Link>
-              <Link to="/login" className="text-[24px]"><FiUser /></Link>
+              <Link
+                to={hasCustomerSession() ? "/account" : "/login"}
+                aria-label={hasCustomerSession() ? "Your account" : "Sign in"}
+                className="text-[24px]"
+              >
+                <FiUser />
+              </Link>
             </div>
           </div>
         </nav>

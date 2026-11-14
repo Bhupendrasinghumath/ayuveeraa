@@ -15,7 +15,7 @@ const faqs = [
   },
   {
     q: "Is Cash on Delivery (COD) available?",
-    a: "Yes, COD is available all over India on selected products. Availability will be shown at checkout."
+    a: "Yes, COD is available on selected orders. Pay an advance of up to ₹99 securely online at checkout and the remaining balance when your order is delivered. Full online payments receive the current online discount shown at checkout; eligible coupon discounts can also apply."
   },
   {
     q: "How can I contact you?",

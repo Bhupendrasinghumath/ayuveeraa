@@ -13,16 +13,28 @@ if (isset($_GET['id']) && (!$id || $id < 1)) {
     send_json(['error' => 'Product id must be a positive integer.'], 400);
 }
 
-$productColumns = 'id, name, category, slug, price, old_price AS oldPrice, rating,
-                   reviews, image, description, tag, is_active, brand, short_description,
-                   dosage_form, pack_size, key_benefits, ingredients, how_to_use,
-                   safety_information, storage_instructions, suitable_for, product_type,
-                   manufacturer, country_of_origin, shelf_life, meta_title, meta_description,
-                   license_number';
+$productColumns = 'products.id, products.name, products.category, products.slug,
+                   products.price, products.old_price AS oldPrice,
+                   product_categories.slug AS categorySlug,
+                   COALESCE((SELECT ROUND(AVG(pr.rating), 2)
+                             FROM product_reviews pr
+                             WHERE pr.product_id = products.id), 0) AS rating,
+                   (SELECT COUNT(*) FROM product_reviews pr
+                    WHERE pr.product_id = products.id) AS reviews,
+                   products.image, products.description, products.tag, products.is_active,
+                   products.brand, products.short_description, products.dosage_form,
+                   products.pack_size, products.key_benefits, products.ingredients,
+                   products.how_to_use, products.safety_information, products.storage_instructions,
+                   products.suitable_for, products.product_type, products.manufacturer,
+                   products.country_of_origin, products.shelf_life, products.meta_title,
+                   products.meta_description, products.license_number';
 
 if ($id !== null) {
     $statement = $pdo->prepare(
-        "SELECT {$productColumns} FROM products WHERE is_active = 1 AND id = :id"
+        "SELECT {$productColumns}
+         FROM products
+         INNER JOIN product_categories ON product_categories.name = products.category
+         WHERE products.is_active = 1 AND product_categories.is_active = 1 AND products.id = :id"
     );
     $statement->execute(['id' => $id]);
     $products = $statement->fetchAll();
@@ -37,6 +49,7 @@ if ($id !== null) {
     $product['price'] = (int) $product['price'];
     $product['oldPrice'] = (int) $product['oldPrice'];
     $product['rating'] = (float) $product['rating'];
+    $product['reviews'] = (int) $product['reviews'];
     $product['is_active'] = (bool) $product['is_active'];
     $product['key_benefits'] = decode_product_json_array($product['key_benefits']);
     $product['ingredients'] = decode_product_json_array($product['ingredients']);
@@ -59,18 +72,26 @@ if ($id !== null) {
     send_json(['data' => $product]);
 }
 
-$sql = 'SELECT id, name, category, slug, price, old_price AS oldPrice, rating,
-               reviews, image, description, tag
+$sql = 'SELECT products.id, products.name, products.category, products.slug,
+               products.price, products.old_price AS oldPrice,
+               product_categories.slug AS categorySlug,
+               COALESCE((SELECT ROUND(AVG(pr.rating), 2)
+                         FROM product_reviews pr
+                         WHERE pr.product_id = products.id), 0) AS rating,
+               (SELECT COUNT(*) FROM product_reviews pr
+                WHERE pr.product_id = products.id) AS reviews,
+               products.image, products.description, products.tag
         FROM products
-        WHERE is_active = 1';
+        INNER JOIN product_categories ON product_categories.name = products.category
+        WHERE products.is_active = 1 AND product_categories.is_active = 1';
 $params = [];
 
 if ($category !== '') {
-    $sql .= ' AND category = :category';
+    $sql .= ' AND product_categories.slug = :category';
     $params['category'] = $category;
 }
 
-$sql .= ' ORDER BY id';
+$sql .= ' ORDER BY products.id';
 $statement = $pdo->prepare($sql);
 $statement->execute($params);
 $products = load_product_images($pdo, $statement->fetchAll());
@@ -80,6 +101,7 @@ foreach ($products as &$product) {
     $product['price'] = (int) $product['price'];
     $product['oldPrice'] = (int) $product['oldPrice'];
     $product['rating'] = (float) $product['rating'];
+    $product['reviews'] = (int) $product['reviews'];
 }
 unset($product);
 

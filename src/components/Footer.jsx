@@ -1,11 +1,14 @@
 import { Link, useNavigate } from 'react-router-dom';
 import BrandWordmark from './BrandWordmark';
+import { getAvailableProductCategories } from '../data/categories';
+import { useProducts } from '../context/useProducts';
 
 function Footer() {
   const navigate = useNavigate();
+  const { products } = useProducts();
 
-  const handleCategoryClick = (slug) => {
-    navigate(`/${slug}`);
+  const handleCategoryClick = (path) => {
+    navigate(path);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -14,16 +17,8 @@ function Footer() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const footerCategories = [
-    { name: "Weight Management", slug: "products/weight-management" },
-    { name: "Hair Care", slug: "products/hair-care" },
-    { name: "Skin Care", slug: "products/skin-care" },
-    { name: "Stress Management", slug: "products/stress-management" },
-    { name: "Blood Purifier", slug: "products/blood-purifier" },
-    { name: "Digestion Support", slug: "products/digestion-support" },
-    { name: "Heart Care", slug: "products/heart-care" },
-    { name: "Sugar Management", slug: "products/sugar-management" },
-  ];
+  const footerCategories = getAvailableProductCategories(products)
+    .filter((category) => category.name !== 'All Products');
 
   return (
     <footer className="w-full mt-12">
@@ -66,8 +61,8 @@ function Footer() {
             <div className="flex flex-col gap-2 text-[13px] text-[#1e3a2a]">
               {footerCategories.map((cat) => (
                 <button 
-                  key={cat.slug} 
-                  onClick={() => handleCategoryClick(cat.slug)}
+                  key={cat.path} 
+                  onClick={() => handleCategoryClick(cat.path)}
                   className="text-left hover:text-[#b85c00] hover:font-semibold transition-all"
                 >
                   {cat.name}

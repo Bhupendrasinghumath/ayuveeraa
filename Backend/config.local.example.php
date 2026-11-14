@@ -10,6 +10,7 @@ return [
     'ADMIN_USERNAME' => 'your_admin_username',
     'ADMIN_PASSWORD_HASH' => 'replace_with_password_hash',
     'ADMIN_TOKEN_SECRET' => 'replace_with_random_secret_at_least_32_chars',
+    'CUSTOMER_AUTH_SECRET' => '',
     'RAZORPAY_KEY_ID' => '',
     'RAZORPAY_KEY_SECRET' => '',
     'RAZORPAY_WEBHOOK_SECRET' => '',

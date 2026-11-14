@@ -12,10 +12,13 @@ in the PHP hosting panel (recommended):
 - `ADMIN_PASSWORD_HASH`: password hash generated with PHP `password_hash()`
 - `ADMIN_TOKEN_SECRET`: random secret of at least 32 characters for signing
   short-lived admin access tokens
+- `CUSTOMER_AUTH_SECRET`: separate private random secret of at least 32
+  characters for customer authentication rate-limit buckets
 - `API_ALLOWED_ORIGINS`: comma-separated frontend origins, for example
   `https://your-store.example,https://www.your-store.example`
-- `RAZORPAY_KEY_ID` and `RAZORPAY_KEY_SECRET`: Razorpay API credentials. Keep
-  the secret on the PHP server only; the public Key ID is returned to checkout.
+- `RAZORPAY_KEY_ID` and `RAZORPAY_KEY_SECRET`: Razorpay API credentials used
+  for COD advances and full online checkout. Keep the secret on the PHP server
+  only; the public Key ID is returned to checkout.
 - `RAZORPAY_WEBHOOK_SECRET`: the secret configured for the Razorpay webhook.
 - `API_PUBLIC_BASE_URL` (optional): public backend base URL without `/api`,
   for example `https://your-store.example/Backend`. Set this when uploaded
@@ -40,9 +43,20 @@ hPanel and put the new password in `config.local.php`.
 1. Use the existing MySQL database and confirm that its `orders` and
    `order_items` tables match the current store schema. For a fresh install,
    import `u895224968_Ayuveera.sql`. For an existing database, run
-   `razorpay_migration.sql` once; it adds online-payment fields and a
-   pending-payment order status. Do not re-import the full SQL dump on an
-   existing store.
+   `razorpay_migration.sql` once if it has not already been applied, then run
+   `contact_phone_migration.sql` once. Fresh installs already include the
+   contact phone column in the SQL dump. After the
+   base `products` and `orders` tables exist, if `product_reviews` is missing,
+   create it using only the initial `CREATE TABLE product_reviews` statement in
+   `product_reviews_migration.sql`; do not execute the synthetic test-order and
+   review seed blocks later in that file. Run
+   `customer_accounts_migration.sql` once after the base tables exist, then
+   `customer_order_account_migration.sql` once, followed by
+   `cod_advance_online_discount_migration.sql` and
+   `admin_commerce_migration.sql` once each. The payment migration backfills
+   existing delivered COD orders as fully paid. The commerce migration seeds
+   categories and the current 10% online discount.
+   Do not re-import the full SQL dump on an existing store.
 2. Set the environment variables above in the PHP hosting panel (or create
    `config.local.php` from the example if environment variables are unavailable).
    Generate a
@@ -51,13 +65,10 @@ hPanel and put the new password in `config.local.php`.
    and use that output as `ADMIN_PASSWORD_HASH`. Generate
    `ADMIN_TOKEN_SECRET` with a secure random generator; do not reuse the DB
    password or commit any of these values.
-3. Add product records in the database; the storefront reads only active rows
-   from the `products` table. To add the bundled demo catalog, sign in to the
-   admin panel and choose **Import demo products**. The protected import skips
-   matching names and does not overwrite existing products. Alternatively, run
-   `php seed_products.php` from the Backend folder in Hostinger Terminal, or
-   import `products_demo_import.sql` in phpMyAdmin's SQL tab. The SQL import
-   creates the products table if needed and skips matching demo product names.
+3. Add verified product records in the admin panel under **Products**. Complete
+   the product details and ingredients, assign an active category, and publish
+   the product when it is ready. The storefront reads only active products in
+   active categories.
 4. Publish this folder on a PHP 8.1+ host with PDO MySQL enabled. For example,
    if it is published at `https://api.example.com/Backend`, its API base URL is
    `https://api.example.com/Backend/api`.
@@ -81,13 +92,27 @@ hPanel and put the new password in `config.local.php`.
 3. In **Websites > File Manager**, open the directory that contains
    `Ayuveera/Backend/api/products.php`. It should be under the site's
    `public_html` directory. Upload the updated backend PHP files, including
+   `Backend/api/admin.php`, `Backend/api/products.php`,
+   `Backend/api/customer-auth.php`, `Backend/api/customer-account.php`,
+   `Backend/api/customer-security.php`, `Backend/api/orders.php`,
+   `Backend/api/track-order.php`,
+   `Backend/api/reviews.php`, `Backend/api/bootstrap.php`,
    `Backend/api/razorpay.php`, `Backend/api/verify-payment.php`,
-   `Backend/api/payment-failed.php`, `Backend/api/razorpay-webhook.php`, and
+   `Backend/api/payment-failed.php`, `Backend/api/razorpay-webhook.php`,
+   `Backend/api/promotions.php`, `Backend/api/validate-coupon.php`, and
    `Backend/config.local.example.php`. Keep migration SQL in your local project
    for database import; it does not need to be published in `public_html`.
 4. In phpMyAdmin, select the exact database configured as `DB_NAME` and run
-   `Backend/razorpay_migration.sql` once using **Import** or the SQL tab. Do not
-   re-import the full SQL dump on an existing store.
+   `Backend/razorpay_migration.sql` if it has not already been applied, then run
+   `Backend/contact_phone_migration.sql` once. If the
+   `product_reviews` table is missing, execute only its initial `CREATE TABLE`
+   statement from `Backend/product_reviews_migration.sql`. Run
+   `Backend/customer_accounts_migration.sql` once, followed by
+   `Backend/customer_order_account_migration.sql`,
+   `Backend/cod_advance_online_discount_migration.sql`, and
+   `Backend/admin_commerce_migration.sql` once each. Do not execute the synthetic
+   test-order/review seed blocks or re-import the full SQL dump on an existing
+   store.
 5. In File Manager, create `Backend/uploads/products` if it does not exist.
    Ensure the PHP process can write to this directory (normally 755; use
    Hostinger's ownership/permission tools rather than making it world-writable).
@@ -96,7 +121,9 @@ hPanel and put the new password in `config.local.php`.
 6. Create `Backend/config.local.php` from the local example, fill the Hostinger
    database details, set `API_ALLOWED_ORIGINS` to the exact frontend origin
    (the origin has no path, e.g. `https://thehillston.com`), and configure the
-   admin fields. Do not upload a file with real credentials under the
+   admin fields. Set `CUSTOMER_AUTH_SECRET` to a separate private value
+   generated with `php -r "echo bin2hex(random_bytes(32)), PHP_EOL;"`. Do not
+   upload a file with real credentials under the
    `config.local.example.php` name. The `.htaccess` rule prevents direct web
    reads of `config.local.php`. If the API and uploaded images are served on
    different hostnames or the API is behind a proxy, also set
@@ -160,13 +187,42 @@ browser tab's session storage. The API can use a separate host, provided its
 
 ## Endpoints
 
-- `GET /products.php` — active catalog; accepts `?category=Hair%20Care`.
+- `GET /products.php` — active catalog; accepts a category slug such as
+  `?category=hair-care`.
 - `GET /products.php?id=1` — one product.
-- `POST /orders.php` — creates a COD order or a pending Razorpay order and
-  item snapshots. The server recalculates totals from active database products;
-  client prices are ignored.
-- `POST /verify-payment.php` — verifies and captures a Razorpay payment before
-  confirming the order.
+- `GET /reviews.php?product_id=1&page=1` — genuine reviews and rating totals for an active product.
+- `POST /reviews.php` — saves one 1–5 star review per delivered product/order
+  owned by the authenticated customer. JSON fields: `productId`, `orderId`,
+  `rating`, `title`, and `reviewText`.
+- `POST /orders.php` — creates a pending COD or online order and item snapshots.
+  The server recalculates totals from active products and current promotions;
+  client prices and discount amounts are ignored. COD requires an online
+  advance of up to ₹99 (capped at the order total), with the remaining balance
+  due on delivery. Full online payment gets the configured percentage discount;
+  an active coupon can stack on the remaining total and applies to online
+  payments only. A guest order creates an account only after the COD
+  advance or full online payment is verified; the new account contains only
+  that order and checkout address.
+- `GET /promotions.php` — current online payment discount and active coupon
+  selected for the storefront offer banner.
+- `POST /validate-coupon.php` — checks an active coupon for full online payment.
+- `POST /track-order.php` — finds an order using its order number and checkout
+  phone number, then returns its status, payment state, subtotal, discount,
+  total, amount paid, balance due, date, and item summary. It is rate-limited
+  and does not return the delivery address or customer contact details.
+  Requires the customer account and COD payment migrations and
+  `CUSTOMER_AUTH_SECRET`.
+- `POST /customer-auth.php` — register or sign in with an Indian mobile number
+  and password. Passwords are hashed on the server; access tokens are random,
+  stored hashed in MySQL, and expire after 30 days. `GET` validates a token;
+  `DELETE` revokes the current session.
+- `GET /customer-account.php` — authenticated profile, account-owned orders,
+  saved addresses, wishlist products, and delivered-order review eligibility.
+  `PATCH` updates profile/password, `POST` creates an address or saves a
+  wishlist product, and `DELETE` removes an owned address or wishlist item.
+- `POST /verify-payment.php` — verifies the Razorpay payment amount and
+  signature; confirms COD orders after the advance and online orders after
+  full discounted payment.
 - `POST /payment-failed.php` — records a dismissed or failed checkout attempt.
 - `POST /razorpay-webhook.php` — validates Razorpay payment events using the
   configured webhook signature.
@@ -174,17 +230,28 @@ browser tab's session storage. The API can use a separate host, provided its
 - `POST /admin-auth.php` — admin sign-in; returns an eight-hour signed token.
 - `GET /admin-auth.php` — verifies an admin token.
 - `/admin.php?resource=products` — admin product list/create/edit/activate.
+  Product forms include the existing detail fields and ingredient rows.
   Existing JSON requests with an HTTP(S) `image` URL remain supported.
   Multipart requests accept `images[]` (1–6 JPEG, PNG, or WebP files, max 5 MB
   each). Creating a product with multipart data requires at least one image.
   On edit, omitting `images[]` preserves the current gallery; supplying it
   replaces the full gallery.
+- `/admin.php?resource=categories` — admin category list/create/activate. A
+  category with active products cannot be deactivated until those products are
+  hidden.
 - `/admin.php?resource=orders` — latest 200 orders and status updates.
+- `/admin.php?resource=customers` — recent customer profiles, saved addresses,
+  order counts, and paid totals.
+- `/admin.php?resource=promotions` — read/update the configured online discount.
+- `/admin.php?resource=coupons` — add, update, activate, and feature percentage
+  coupons for the storefront banner.
 - `/admin.php?resource=messages` — latest 200 contact messages and status updates.
-- `POST /admin.php?resource=seed-demo` — imports missing demo products (admin token required).
 
 Admin requests send the token as `Authorization: Bearer <token>`. Products are
 hidden by deactivation rather than deleted, so historic order items stay intact.
+Customer bearer tokens are stored in the browser tab's session storage and are
+never persisted as plaintext in MySQL; do not store customer passwords in the
+frontend.
 
 Order and other existing JSON POST requests use `Content-Type: application/json`.
 Product gallery uploads use `multipart/form-data`; let the browser set its
@@ -202,10 +269,20 @@ boundary rather than setting the content type manually. Order request example:
 }
 ```
 
-For online checkout, set `"payment": "RAZORPAY"`; the backend calculates the
-amount, creates the provider order, and verifies the signed payment before
-confirming the order.
+The COD selection charges a ₹99 advance (or the full total when the order is
+under ₹99) through Razorpay; the remainder is due on delivery. For full online
+checkout, set `"payment": "RAZORPAY"`; the backend applies the configured online
+discount and any valid coupon, creates the provider order for the discounted
+total, and verifies the signed payment before confirming the order.
 
 OTP login is not included; it requires an SMS provider and server-side
-OTP/rate-limit handling. Add HTTPS and request rate-limiting at the hosting/
-proxy layer before production use.
+OTP/rate-limit handling. Customer accounts use phone + password instead.
+Phone ownership is not verified by checkout. A new guest account contains only
+the order placed in that checkout and its delivery address; it is never linked
+to an existing account or older orders by phone alone. If the number already
+has an account, or is not a valid Indian mobile number, checkout stays as a
+guest order and can be tracked with the order number and checkout phone.
+Password recovery for an existing account requires identity verification; do
+not add a phone-only password reset. The auth API also applies database-backed
+phone/IP rate limits. Keep HTTPS enabled and configure additional request
+throttling at the hosting/proxy layer.

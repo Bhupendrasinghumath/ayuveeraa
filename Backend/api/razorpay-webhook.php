@@ -46,8 +46,8 @@ if (
 $pdo = database();
 $pdo->beginTransaction();
 $orderStatement = $pdo->prepare(
-    'SELECT id, total_amount, payment_status FROM orders
-     WHERE razorpay_order_id = :gateway_id AND payment_method = \'RAZORPAY\' FOR UPDATE'
+    'SELECT id, payment_method, total_amount, payment_status FROM orders
+     WHERE razorpay_order_id = :gateway_id AND payment_method IN (\'COD\', \'RAZORPAY\') FOR UPDATE'
 );
 $orderStatement->execute(['gateway_id' => $gatewayOrderId]);
 $order = $orderStatement->fetch();
@@ -56,28 +56,41 @@ if (!$order) {
     send_json(['data' => ['received' => true]]);
 }
 
+$expectedAmount = $order['payment_method'] === 'COD'
+    ? min(99, (int) $order['total_amount'])
+    : (int) $order['total_amount'];
+$successPaymentStatus = $order['payment_method'] === 'COD' && $expectedAmount < (int) $order['total_amount']
+    ? 'partially_paid'
+    : 'paid';
+
 if ($eventName === 'payment.captured') {
     if (
         ($payment['status'] ?? null) !== 'captured'
         || ($payment['currency'] ?? null) !== 'INR'
-        || ($payment['amount'] ?? null) !== (int) $order['total_amount'] * 100
+        || ($payment['amount'] ?? null) !== $expectedAmount * 100
     ) {
         $pdo->rollBack();
         send_json(['error' => 'Webhook amount does not match the order.'], 422);
     }
-    if ($order['payment_status'] !== 'paid') {
+    if (!in_array($order['payment_status'], ['paid', 'partially_paid', 'refunded'], true)) {
         $update = $pdo->prepare(
             "UPDATE orders
-             SET payment_status = 'paid', razorpay_payment_id = :payment_id, paid_at = CURRENT_TIMESTAMP,
+             SET payment_status = :payment_status, paid_amount = :paid_amount,
+                 razorpay_payment_id = :payment_id, paid_at = CURRENT_TIMESTAMP,
                  status = CASE WHEN status = 'pending_payment' THEN 'placed' ELSE status END
-             WHERE id = :id AND payment_status <> 'paid'"
+             WHERE id = :id AND payment_status NOT IN ('paid', 'partially_paid', 'refunded')"
         );
-        $update->execute(['payment_id' => $paymentId, 'id' => $order['id']]);
+        $update->execute([
+            'payment_status' => $successPaymentStatus,
+            'paid_amount' => $expectedAmount,
+            'payment_id' => $paymentId,
+            'id' => $order['id'],
+        ]);
     }
-} elseif ($order['payment_status'] !== 'paid') {
+} elseif (!in_array($order['payment_status'], ['paid', 'partially_paid', 'refunded'], true)) {
     $update = $pdo->prepare(
         "UPDATE orders SET payment_status = 'failed'
-         WHERE id = :id AND payment_status <> 'paid'"
+         WHERE id = :id AND payment_status NOT IN ('paid', 'partially_paid')"
     );
     $update->execute(['id' => $order['id']]);
 }

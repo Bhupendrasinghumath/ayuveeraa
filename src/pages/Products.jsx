@@ -1,19 +1,31 @@
+import { useEffect, useMemo } from 'react';
 import ProductCard from '../components/ProductCard.jsx';
 import { useProducts } from '../context/useProducts.js';
-import { categories as productCategories } from '../data/categories.js';
+import { getAvailableProductCategories } from '../data/categories.js';
 import { useSearchParams } from 'react-router-dom';
 
 export default function Products() {
   const { products, loading, catalogError } = useProducts();
   const [searchParams, setSearchParams] = useSearchParams();
   const selectedSlug = searchParams.get("category");
-  const selectedCategory = productCategories.find(
-    (category) => category.path.split("/").pop() === selectedSlug
+  const availableCategories = useMemo(
+    () => getAvailableProductCategories(products),
+    [products],
+  );
+  const selectedCategory = availableCategories.find(
+    (category) => category.slug === selectedSlug
   );
   const selected = selectedCategory?.name ?? "All Products";
-  const categories = productCategories.map((category) => category.name);
+  const categories = availableCategories.map((category) => category.name);
 
   const filtered = selected === "All Products" ? products : products.filter(p => p.category === selected);
+
+  useEffect(() => {
+    if (!selectedSlug || loading || (catalogError && products.length === 0)) return;
+    if (!availableCategories.some((category) => category.slug === selectedSlug)) {
+      setSearchParams({}, { replace: true });
+    }
+  }, [availableCategories, catalogError, loading, products.length, selectedSlug, setSearchParams]);
 
   const selectCategory = (categoryName) => {
     if (categoryName === "All Products") {
@@ -21,9 +33,9 @@ export default function Products() {
       return;
     }
 
-    const category = productCategories.find((item) => item.name === categoryName);
+    const category = availableCategories.find((item) => item.name === categoryName);
     if (!category) return;
-    setSearchParams({ category: category.path.split("/").pop() });
+    setSearchParams({ category: category.slug });
   };
 
   return (

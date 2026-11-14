@@ -39,7 +39,7 @@ export default function PrivacyPolicy() {
         <h2 className="text-lg font-bold">SECTION 4: TYPES OF INFORMATION COLLECTED</h2>
         <p>When you use the websites which are owned or operated by AyuVeeraa House Private Limited, we collect information relating to you and your use of our services from a variety of sources (if needed).</p>
         <p><b>(a) INFORMATION WE COLLECT DIRECTLY FROM YOU:</b></p>
-        <p><b>REGISTRATION INFORMATION:</b> When you register for an account, we collect your username, password and email address. If you choose to register using a third-party account (such as Google or Facebook), we collect the basic profile information that account shares with us.<br/>
+        <p><b>REGISTRATION INFORMATION:</b> When you create an account, we collect your first name, last name and mobile number, and store your password as a one-way hash. Your account may also contain saved delivery addresses, wishlist items and orders placed while signed in. Mobile numbers are not verified by the current password sign-in flow, and no OTP is sent. Authentication session tokens are stored as hashes on our server; the active token is held in browser session storage.<br/>
         <b>BILLING INFORMATION:</b> If you make a payment to us, we ask for your billing details, such as your name, address, email address and payment information.<br/>
         <b>ACCOUNT SETTINGS:</b> Your preferences, such as default language, time zone and communication settings.<br/>
         <b>OTHER DATA YOU INTENTIONALLY SHARE:</b> Any personal information you choose to submit to us in other ways, for example when you give us a testimonial or take part in a contest.</p>
@@ -51,7 +51,7 @@ export default function PrivacyPolicy() {
         INFORMATION FROM THIRD PARTIES: if you give permission to those third parties.</p>
 
         <p><b>(c) TRANSACTIONAL COMMUNICATIONS:</b><br/>
-        By placing an order, you may receive communications necessary for the fulfilment of your order, including order confirmations, payment and refund updates, delivery notifications, customer support communications. Such communications may be sent through telephone, SMS, email, WhatsApp, RCS or other appropriate channels. By verifying your phone number, you authorize us to send promotional messages, emails, and WhatsApp communications.</p>
+        By placing an order, you may receive communications necessary for the fulfilment of your order, including order confirmations, payment and refund updates, delivery notifications, and customer support communications. Such communications may be sent through telephone, SMS, email, WhatsApp, RCS or other appropriate channels. Marketing communications are sent only where you have provided the required consent.</p>
 
         <h2 className="text-lg font-bold">SECTION 5: HOW WE COLLECT YOUR INFORMATION</h2>
         <p>We collect information mainly in two ways: information you provide to us directly, and information we get from your use of our services. INFORMATION WE MAY GET FROM YOUR USE OF THE SERVICES is primarily non-personally-identifying information of the sort that web browsers, servers and services like google analytics typically make available. Such as browser type, language preference, referring site, and the time of each visit.</p>
@@ -64,7 +64,7 @@ export default function PrivacyPolicy() {
           <li>To create new services, features or content</li>
           <li>To facilitate account creation and login process</li>
           <li>To contact you about your service or account</li>
-          <li>To contact you for marketing purposes</li>
+          <li>To send marketing communications where you have opted in</li>
           <li>To respond to legal requests and prevent harm</li>
         </ul>
 

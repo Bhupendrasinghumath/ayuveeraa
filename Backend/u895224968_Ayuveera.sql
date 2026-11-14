@@ -31,6 +31,7 @@ CREATE TABLE `contact_messages` (
   `id` bigint(20) UNSIGNED NOT NULL,
   `name` varchar(120) NOT NULL,
   `email` varchar(254) NOT NULL,
+  `phone` varchar(20) DEFAULT NULL,
   `subject` varchar(200) NOT NULL,
   `message` text NOT NULL,
   `status` enum('new','read','resolved') NOT NULL DEFAULT 'new',

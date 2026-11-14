@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import { API_BASE_URL, apiRequest } from '../lib/api.js';
+import { readCachedProductCatalog, writeCachedProductCatalog } from '../lib/productCache.js';
 import { ProductContext } from './productContext.js';
 
 export function ProductProvider({ children }) {
-  const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(Boolean(API_BASE_URL));
+  const [cachedProducts] = useState(readCachedProductCatalog);
+  const [products, setProducts] = useState(cachedProducts || []);
+  const [loading, setLoading] = useState(Boolean(API_BASE_URL) && !cachedProducts);
   const [catalogError, setCatalogError] = useState(
     API_BASE_URL ? '' : 'Product API is not configured. Set VITE_API_BASE_URL and rebuild the app.',
   );
@@ -15,15 +17,16 @@ export function ProductProvider({ children }) {
     const controller = new AbortController();
     apiRequest('products.php', { signal: controller.signal })
       .then((catalog) => {
-        setProducts(catalog.map((product) => ({
+        const nextProducts = catalog.map((product) => ({
           ...product,
           save: product.oldPrice - product.price,
-        })));
+        }));
+        setProducts(nextProducts);
+        writeCachedProductCatalog(nextProducts);
         setCatalogError('');
       })
       .catch((error) => {
         if (error.name !== 'AbortError') {
-          setProducts([]);
           setCatalogError(error.message);
         }
       })

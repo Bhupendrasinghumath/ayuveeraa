@@ -1,4 +1,5 @@
-import { Routes, Route, Link, useLocation } from 'react-router-dom';
+import { useLayoutEffect } from 'react';
+import { Routes, Route, Link, Navigate, useLocation } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import Home from "./pages/Home";
@@ -14,6 +15,7 @@ import Shop from './pages/Shop';
 import Checkouts from './pages/Checkouts';
 import OrderSuccess from './pages/OrderSuccess';
 import Login from './pages/Login';
+import Account from './pages/Account';
 
 import WeightManagement from './pages/categories/weight-management';
 import HairCare from './pages/categories/hair-care';
@@ -35,24 +37,36 @@ import PrivacyPolicy from './pages/TermsAndCondition/PrivacyPolicy';
 import ShippingPolicy from './pages/TermsAndCondition/ShippingPolicy';
 import TermsAndCondition from './pages/TermsAndCondition/TermsAndCondition';
 import { useProducts } from './context/useProducts';
+import { hasProductsInCategory } from './data/categories';
 import Admin from './pages/Admin';
 
+function AvailableCategoryRoute({ category, children }) {
+  const { products, loading } = useProducts();
+
+  if (loading) return null;
+  if (!hasProductsInCategory(products, category)) {
+    return <Navigate to="/products" replace />;
+  }
+  return children;
+}
+
 function App() {
-  const { catalogError, loading: catalogLoading } = useProducts();
+  const { products, catalogError } = useProducts();
   const location = useLocation();
   const isAdmin = location.pathname === '/adminayuveera2026';
+
+  useLayoutEffect(() => {
+    window.scrollTo(0, 0);
+  }, [location.pathname]);
 
   return (
     <div className="app">
       {!isAdmin && <Navbar />}
       {!isAdmin && catalogError && (
         <p role="status" className="bg-amber-50 px-4 py-2 text-center text-sm text-amber-900">
-          Product catalog unavailable: {catalogError}
-        </p>
-      )}
-      {!isAdmin && !catalogError && catalogLoading && (
-        <p role="status" className="bg-[#f4f6f1] px-4 py-2 text-center text-sm text-gray-600">
-          Loading products...
+          {products.length
+            ? 'Showing saved products; latest updates are unavailable:'
+            : 'Product catalog unavailable:'} {catalogError}
         </p>
       )}
       <Routes>
@@ -63,18 +77,18 @@ function App() {
         <Route path="/products" element={<Products />} />
 
         {/*  12 CATEGORIES */}
-        <Route path="/products/weight-management" element={<WeightManagement />} />
-        <Route path="/products/hair-care" element={<HairCare />} />
-        <Route path="/products/skin-care" element={<SkinCare />} />
-        <Route path="/products/stress-management" element={<StressManagement />} />
-        <Route path="/products/blood-purifier" element={<BloodPurifier />} />
-        <Route path="/products/digestion-support" element={<DigestionSupport />} />
-        <Route path="/products/eye-care" element={<EyeCare />} />
-        <Route path="/products/heart-care" element={<HeartCare />} />
-        <Route path="/products/migraine-support" element={<MigraineSupport />} />
-        <Route path="/products/herbal-shots" element={<HerbalShots />} />
-        <Route path="/products/plant-protein-supplement" element={<PlantProtein />} />
-        <Route path="/products/sugar-management" element={<SugarManagement />} />
+        <Route path="/products/weight-management" element={<AvailableCategoryRoute category="Weight Management"><WeightManagement /></AvailableCategoryRoute>} />
+        <Route path="/products/hair-care" element={<AvailableCategoryRoute category="Hair Care"><HairCare /></AvailableCategoryRoute>} />
+        <Route path="/products/skin-care" element={<AvailableCategoryRoute category="Skin Care"><SkinCare /></AvailableCategoryRoute>} />
+        <Route path="/products/stress-management" element={<AvailableCategoryRoute category="Stress Management"><StressManagement /></AvailableCategoryRoute>} />
+        <Route path="/products/blood-purifier" element={<AvailableCategoryRoute category="Blood Purifier"><BloodPurifier /></AvailableCategoryRoute>} />
+        <Route path="/products/digestion-support" element={<AvailableCategoryRoute category="Digestion Support"><DigestionSupport /></AvailableCategoryRoute>} />
+        <Route path="/products/eye-care" element={<AvailableCategoryRoute category="Eye Care"><EyeCare /></AvailableCategoryRoute>} />
+        <Route path="/products/heart-care" element={<AvailableCategoryRoute category="Heart Care"><HeartCare /></AvailableCategoryRoute>} />
+        <Route path="/products/migraine-support" element={<AvailableCategoryRoute category="Migraine Support"><MigraineSupport /></AvailableCategoryRoute>} />
+        <Route path="/products/herbal-shots" element={<AvailableCategoryRoute category="Herbal Shots"><HerbalShots /></AvailableCategoryRoute>} />
+        <Route path="/products/plant-protein-supplement" element={<AvailableCategoryRoute category="Plant Protein Supplement"><PlantProtein /></AvailableCategoryRoute>} />
+        <Route path="/products/sugar-management" element={<AvailableCategoryRoute category="Sugar Management"><SugarManagement /></AvailableCategoryRoute>} />
         
         {/* DETAIL -  */}
         <Route path="/product/:id" element={<ProductDetails />} />
@@ -89,6 +103,7 @@ function App() {
         <Route path="/shop" element={<Shop />} />
         <Route path="/order-success" element={<OrderSuccess />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/account" element={<Account />} />
 
         <Route path="/faqs" element={<FAQs />} />
         <Route path="/track-order" element={<TrackOrder />} />

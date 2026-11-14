@@ -83,7 +83,9 @@ export default function Home() {
   const [slide, setSlide] = useState(0);
   const { products, loading: catalogLoading, catalogError } = useProducts();
   const collectionProducts = products.slice(0, 8);
-  const featuredProducts = collectionProducts.slice(0, 4);
+  const featuredProducts = [29, 28, 31, 25]
+    .map(id => products.find(product => Number(product.id) === id))
+    .filter(Boolean);
 
   const desktopImgs = [desktopPachan, desktopStress, desktopCream, desktopOil, desktopPachan];
   const laptopImgs = [laptopPachan, laptopStress, laptopCream, laptopOil, laptopPachan];
@@ -162,7 +164,6 @@ export default function Home() {
         </h2>
         <div className="w-full grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-5 mt-8 text-left xl:max-w-[1390px] xl:mx-auto">
           {collectionProducts.map(p => <ProductCard key={p.id} p={p} />)}
-          {catalogLoading && <p className="col-span-full text-center text-sm text-gray-600">Loading products…</p>}
           {!catalogLoading && catalogError && <p role="alert" className="col-span-full text-center text-sm text-red-700">Products could not be loaded right now. {catalogError}</p>}
           {!catalogLoading && !catalogError && collectionProducts.length === 0 && <p className="col-span-full text-center text-sm text-gray-600">No products are available right now.</p>}
         </div>
@@ -400,9 +401,12 @@ export default function Home() {
                 );
               })}
             </div>
-          ) : (
-            <p role={catalogError ? "alert" : "status"} className="rounded-2xl border border-[#e8e0c8] bg-white p-6 text-center text-sm text-[#555]">
-              {catalogLoading ? "Loading featured products..." : `Featured products are unavailable right now.${catalogError ? ` ${catalogError}` : ""}`}
+          ) : !catalogLoading && (
+            <p
+              role={catalogError ? "alert" : "status"}
+              className="rounded-2xl border border-[#e8e0c8] bg-white p-6 text-center text-sm text-[#555]"
+            >
+              Featured products are unavailable right now.{catalogError ? ` ${catalogError}` : ""}
             </p>
           )}
         </div>

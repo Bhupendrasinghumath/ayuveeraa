@@ -17,7 +17,7 @@ if (
 $statement = database()->prepare(
     "UPDATE orders
      SET payment_status = 'failed'
-     WHERE id = :id AND payment_method = 'RAZORPAY'
+     WHERE id = :id AND payment_method IN ('COD', 'RAZORPAY')
        AND razorpay_order_id = :gateway_id AND payment_status = 'pending'"
 );
 $statement->execute(['id' => $orderId, 'gateway_id' => $gatewayOrderId]);

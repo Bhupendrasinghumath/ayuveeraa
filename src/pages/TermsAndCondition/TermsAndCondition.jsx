@@ -133,7 +133,7 @@ export default function TermsAndCondition() {
          </div>
       </div>
           <h3 className="font-bold text-black pt-4 text-[16px]">SECTION 23: PRICING</h3>
-          <p>All products sold at MRP unless specified otherwise. Prices include taxes and charged as displayed. No extra charges on delivery. For COD, pay total amount to delivery person.</p>
+          <p>All products are sold at MRP unless specified otherwise. Prices include taxes and are charged as displayed. For COD orders, an advance of up to ₹99 is payable online at checkout and the remaining order balance is payable on delivery. Full online payments receive the current online discount shown at checkout; eligible coupon discounts apply only to full online payments.</p>
 
           <h3 className="font-bold text-black pt-4 text-[16px]">SECTION 24: PAYMENT</h3>
           <p>When placing an order on the Website, you can choose from various payment options available. You must use your own debit/credit card or banking details for the transaction. Once security checks are verified through the secured server, AyuVeeraa is not responsible for any misuse of your debit/credit card or banking details and will not be liable for any credit card fraud. The responsibility to prove fraudulent use of your credit card on the Website lies solely with you.</p>

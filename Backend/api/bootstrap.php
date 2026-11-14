@@ -56,6 +56,24 @@ set_exception_handler(static function (Throwable $exception): void {
         $sqlState = $exception->errorInfo[0] ?? $exception->getCode();
         $driverCode = $exception->errorInfo[1] ?? null;
         if (
+            ($sqlState === '42S02' || $sqlState === '42S22')
+            && preg_match('/password_setup_required|password_setup_order_id/i', $exception->getMessage())
+        ) {
+            send_json([
+                'error' => 'Order-created customer accounts are not configured. Run Backend/customer_order_account_migration.sql against the configured database.',
+                'code' => 'CUSTOMER_ORDER_ACCOUNT_MIGRATION_MISSING',
+            ], 500);
+        }
+        if (
+            ($sqlState === '42S02' || $sqlState === '42S22')
+            && preg_match('/customer_sessions|customer_auth_limits|customer_addresses|customer_wishlist|customers|customer_id/i', $exception->getMessage())
+        ) {
+            send_json([
+                'error' => 'Customer account tables are missing. Run Backend/customer_accounts_migration.sql against the configured database.',
+                'code' => 'CUSTOMER_ACCOUNT_MIGRATION_MISSING',
+            ], 500);
+        }
+        if (
             $sqlState === '42S02'
             && $driverCode === 1146
             && preg_match('/(?:^|[^a-zA-Z0-9_])product_images(?:$|[^a-zA-Z0-9_])/i', $exception->getMessage())
@@ -63,6 +81,31 @@ set_exception_handler(static function (Throwable $exception): void {
             send_json([
                 'error' => 'The product image gallery table is missing. Run Backend/product_images_migration.sql on the production database, then retry.',
                 'code' => 'PRODUCT_IMAGES_MIGRATION_MISSING',
+            ], 500);
+        }
+        if (
+            preg_match('/product_categories|promotion_settings|coupons|online_discount_amount|coupon_discount_amount|coupon_code/i', $exception->getMessage())
+            && (
+                $sqlState === '42S02'
+                || $sqlState === '42S22'
+            )
+        ) {
+            send_json([
+                'error' => 'Admin categories and promotion controls are not configured. Run Backend/admin_commerce_migration.sql against the configured database.',
+                'code' => 'ADMIN_COMMERCE_MIGRATION_MISSING',
+            ], 500);
+        }
+        if (
+            preg_match('/subtotal_amount|discount_amount|paid_amount|partially_paid/i', $exception->getMessage())
+            && (
+                $sqlState === '42S02'
+                || $sqlState === '42S22'
+                || $driverCode === 1265
+            )
+        ) {
+            send_json([
+                'error' => 'COD advance and online discount fields are not configured. Run Backend/cod_advance_online_discount_migration.sql against the configured database.',
+                'code' => 'COD_PAYMENT_MIGRATION_MISSING',
             ], 500);
         }
 
@@ -90,6 +133,13 @@ set_exception_handler(static function (Throwable $exception): void {
         send_json([
             'error' => 'Database configuration is missing on the PHP host. Set DB_HOST, DB_NAME, DB_USER, and DB_PASS.',
             'code' => 'DATABASE_CONFIGURATION_MISSING',
+        ], 500);
+    }
+
+    if ($exception instanceof RuntimeException && str_starts_with($exception->getMessage(), 'CUSTOMER_AUTH_SECRET')) {
+        send_json([
+            'error' => 'Customer authentication is not configured on the PHP host. Set CUSTOMER_AUTH_SECRET to a private random value of at least 32 characters.',
+            'code' => 'CUSTOMER_AUTH_CONFIGURATION_MISSING',
         ], 500);
     }
 
